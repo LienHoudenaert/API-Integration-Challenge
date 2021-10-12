@@ -8,9 +8,6 @@ from tabulate import tabulate
 #tabulate uses wcwidth to handle the output of unicode strings
 import wcwidth
 
-#client_id = 646c6a1c7dbe4964adcd07923ac9cf25
-#client_secret = 8cf58a7129c641469c24310389acd2c9
-
 #set variables
 url = "https://accounts.spotify.com/api/token"
 headers = {}
