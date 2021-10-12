@@ -5,12 +5,18 @@ import json
 
 #output formatting
 from tabulate import tabulate
+#tabulate uses wcwidth to handle the output of unicode strings
+import wcwidth
+
+#client_id = 646c6a1c7dbe4964adcd07923ac9cf25
+#client_secret = 8cf58a7129c641469c24310389acd2c9
 
 #set variables
 url = "https://accounts.spotify.com/api/token"
 headers = {}
 data = {}
 
+#show some information for the user
 print(" ")
 print("Search for your favortie artist on Spotify via the spotify API. You will get some information about the artist, the top 10 track of the artist and the albums of the artist.")
 print("To use this program you will need your client_id and your client_secret. Login at https://developer.spotify.com/dashboard/ to get your credentials!")
@@ -91,19 +97,23 @@ try:
             #use artistId to find information about the artist with that id
             artistUrl = f"https://api.spotify.com/v1/artists/{artistId}"
 
-
             #use artistId to find the top 10 tracks of the artist with that id in Belgium
             tracksUrl = f"https://api.spotify.com/v1/artists/{artistId}/top-tracks?market=BE"
-            #authorization with bearer and given token
 
-            #use artistId to find the albums of the artist with that id in Belgium
-            albumsUrl = f"https://api.spotify.com/v1/artists/{artistId}/albums?market=BE"
-            #authorization with bearer and given token
+            #use artistId to find the first 50 albums of the artist with that id in Belgium
+            albumsUrl = f"https://api.spotify.com/v1/artists/{artistId}/albums?limit=50&include_groups=album&market=BE"
+            #use artistId to find the second 50 albums of the artist with that id in Belgium
+            albumsUrl100 = f"https://api.spotify.com/v1/artists/{artistId}/albums?offset=50&limit=50&include_groups=album&market=BE"
 
-            #get results from the info, track and albums search
+            #use artistId to find the related artists
+            relatedUrl = f"https://api.spotify.com/v1/artists/{artistId}/related-artists?limit=10"
+
+            #get results from the info, tracks, albums and related artists search
             artist_info = requests.get(url=artistUrl, headers=headers).json()
             top_tracks = requests.get(url=tracksUrl, headers=headers).json()
             artist_albums = requests.get(url=albumsUrl, headers=headers).json()
+            artist_albums100 = requests.get(url=albumsUrl100, headers=headers).json()
+            related_artists = requests.get(url=relatedUrl, headers=headers).json()
 
             #show the found data to the user
             print("")
@@ -128,23 +138,47 @@ try:
             print("-------------------------------------------------------------------------------")
             print("")
 
-            #albums of the artist, including release dates
-            print("Albums of " + artist_info["name"] + ":")
-            print("-------------------------------------------------------------------------------")
-
             #for each album of artist store unique album name and release date in array
             array = []
+            array_name = []
             for album in artist_albums["items"]:
                 album_array = [album["name"], album["release_date"]]
-                if album_array not in array:
+                album_name = album["name"]
+                if album_name not in array_name:
+                    array_name.append(album["name"])
+                    array.append([album["name"], album["release_date"]])
+
+            for album in artist_albums100["items"]:
+                album_array = [album["name"], album["release_date"]]
+                album_name = album["name"]
+                if album_name not in array_name:
+                    array_name.append(album["name"])
                     array.append([album["name"], album["release_date"]])
             
-            #sort the array (asc) based on release date
-            array.sort(key=lambda x:x[1])
+            #sort the array (desc) based on release date
+            array.sort(key=lambda x:x[1], reverse=True)
 
             #show unique sorted albums with the use of the tabulate module
-            print (tabulate(array, headers=["Album name:", "Release date:"]))    
+            print(tabulate(array, headers=["Most recent Spotify albums of " + artist_info["name"] + ":", "Release date:"]))    
 
+            print("-------------------------------------------------------------------------------")
+            print("")
+
+            #related artists, including popularity
+            #for the 8 firts related artists, store the artist name and popularity in an array
+            array_related = []
+            i=1
+            for related in related_artists["artists"]:
+                while i <= 8:
+                    array_related.append([related["name"], related["popularity"]])
+                    break
+                i = i+1
+            
+            #sort the array (desc) based on popularity
+            array_related.sort(key=lambda x:x[1], reverse=True)
+
+            #show related artists with the use of the tabulate module
+            print(tabulate(array_related, headers=["Related artists:", "Popularity:"]))
             print("-------------------------------------------------------------------------------")
 
 #when program is ended due to keyboard input, quit without errors/warnings    
